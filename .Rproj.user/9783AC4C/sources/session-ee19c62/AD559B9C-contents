@@ -1,0 +1,29 @@
+library(tidyverse)
+library(janitor)
+library(shiny)
+
+ui <- fluidPage(
+  tableOutput("tb1")
+  
+)
+
+server <- function(input, output, session) {
+  data1<-reactive({
+    "INDIA-AQI-DATA-2015-2020.csv" %>% 
+      read_csv() %>% 
+      clean_names()
+  })
+  data2<-reactive({
+    data1() %>% 
+      mutate(year=date %>% year(),
+             month=date %>% month(),
+             month2=date %>% month(label=T),
+             day=date %>% day(),
+             week =date%>% week(),
+             weekday=date %>% wday(label=T))
+  })
+  
+}
+
+shinyApp(ui, server)
+getwd()

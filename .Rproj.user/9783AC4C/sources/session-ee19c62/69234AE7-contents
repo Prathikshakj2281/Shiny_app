@@ -1,0 +1,40 @@
+library(tidyverse)
+library(janitor)
+library(lubridate)  # <-- Required for year(), month(), etc.
+library(shiny)
+
+ui <- fluidPage(
+  tableOutput("tb1")
+)
+
+server <- function(input, output, session) {
+  data1 <- reactive({
+    read_csv("INDIA-AQI-DATA-2015-2020.csv") %>% 
+      clean_names()
+  })
+  
+  data2 <- reactive({
+    data1() %>% 
+      mutate(
+        year = year(date),
+        month = month(date),
+        month2 = month(date, label = TRUE),
+        day = day(date),
+        week = week(date),
+        weekday = wday(date, label = TRUE)
+      )
+  }) 
+  
+  
+  data3 <- reactive({
+    data2() %>% 
+      pivot_longer(c(3:14),names_to = "pollutants",values_to = "values")
+    
+  }) 
+  
+  output$tb1 <- renderTable({
+    data3() 
+  })
+}
+
+shinyApp(ui, server)

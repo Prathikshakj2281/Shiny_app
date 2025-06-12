@@ -1,0 +1,182 @@
+library(tidyverse)
+library(janitor)
+library(lubridate)
+
+
+read_csv("INDIA-AQI-DATA-2015-2020.csv")->df
+df
+View(df)
+
+df %>% 
+clean_names()->aqidf
+
+aqidf %>% 
+  mutate(year=date %>% year(),
+         month=date %>% month(),
+         month2=date %>% month(label=T),
+         day=date %>% day(),
+         week =date%>% week(),
+         weekday=date %>% wday(label=T))->aqidf1
+aqidf1
+View(aqidf1)
+
+colnames(aqidf1)
+
+glimpse(aqidf1)
+
+aqidf1 %>% 
+  library(tidyverse)
+
+pollutant_data_long <- aqidf1 %>%
+  pivot_longer(
+    cols = c(pm2_5, pm10, no, no2, n_ox, nh3, co, so2, o3, benzene, toluene, xylene),
+    names_to = "pollutant",
+    values_to = "value"
+  )
+
+View(pollutant_data_long)
+
+aqidf1 %>% 
+  pivot_longer(c(3:14),names_to = "pollutants",values_to = "values")->aqidf2
+
+View(aqidf2)
+
+aqidf2 %>% 
+  group_by(city,year,pollutants) %>% 
+  summarize(mean_value=mean(values,na.rm =T))->aqi_pollutantwise
+
+aqi_pollutantwise  
+
+aqidf2 %>% 
+  group_by(year,pollutants) %>% 
+  summarize(mean_value=mean(values,na.rm =T))->aqi_yearwise
+
+aqi_yearwise  
+
+library(ggplot2)
+ggplot(aqi_yearwise,aes(x=year,y=mean_value,color=pollutants))+
+  geom_line(size=1)+
+  labs(title="Yearwise pollutant average values",x="Year",y="Average values")
+
+  
+  
+  library(ggplot2)
+  ggplot(aqi_yearwise,aes(x=year,y=mean_value,color=pollutants))+
+    geom_line(size=1)+
+    labs(title="Yearwise pollutant average values",x="Year",y="Average values",subtitle ="2015-2020" )+
+  facet_wrap(~pollutants,scale="free")+
+    theme_classic()-> pollutant_plot
+  
+  pollutant_plot
+  
+  library(plotly)
+  ggplotly(pollutant_plot)
+
+  ggsave("Air Pollutants Trends.pdf",
+         plot=pollutant_plot,
+         units="in",
+         width=10,
+         height=6)
+  
+  ## assignment
+  #2. air quality trends for bengaluru
+  ##3 co trends for all cities
+  ## air quality trend for bengaluru, chennai, mumbai, hyderabad
+  ## pm 2.5 trend for bengaluru for 2015-2020
+  ## all pollutant trends for bengaluru
+ 
+  
+ ## 2.  air quality trends for bengaluru
+   aqi_bengaluru <- aqidf2 %>% 
+    group_by(year, pollutants, city) %>% 
+    summarize(mean_value = mean(values, na.rm = TRUE), .groups = "drop") %>% 
+    filter(city == "Bengaluru")
+  
+  aqi_bengaluru
+  
+  ggplot(aqi_bengaluru,aes(x=year,y=mean_value,color=pollutants))+
+    geom_line(size=1)+
+    labs(title="Benaguluru-Yearwise pollutant average value",x="Year",y="Average values",subtitle ="2015-2020" )+
+    facet_wrap(~pollutants,scale="free")+
+    theme_classic()-> B_pollutant_plot
+  
+  ggplotly(B_pollutant_plot)
+  
+  ggsave(" Bengaluru Air Pollutants Trends.pdf",
+         plot=B_pollutant_plot,
+         units="in",
+         width=10,
+         height=6)
+  
+  ##3 co trends for all cities
+  
+  aqidf2 %>% 
+    group_by(year,city,pollutants) %>% 
+    summarize(mean_value=mean(values,na.rm =T)) %>% 
+    filter(pollutants == "co")->aqi_citywise_co
+  
+  aqi_citywise_co  
+  
+  ggplot(aqi_citywise_co,aes(x=year,y=mean_value,color=city))+
+    geom_line(size=1)+
+    labs(title="Citywise co pollutant average value",x="Year",y="Average values",subtitle ="2015-2020" )
+  
+  ggplot(aqi_citywise_co,aes(x=year,y=mean_value,color=city))+
+    geom_line(size=1)+
+    labs(title="Citywise co pollutant average value",x="Year",y="Average values",subtitle ="2015-2020" )+
+    facet_wrap(~city,scale="free")+
+    theme_classic()-> co_pollutant_plot
+  
+  ggplotly(co_pollutant_plot)
+  
+  ggsave(" Citywise co Pollutants Trends.pdf",
+         plot= co_pollutant_plot,
+         units="in",
+         width=10,
+         height=6)
+  
+  ## air quality trend for bengaluru, chennai, mumbai, hyderabad
+  
+  aqi_city <- aqidf2 %>%
+    group_by(year, pollutants, city) %>%
+    summarize(mean_value = mean(values, na.rm = TRUE), .groups = "drop") %>%
+    filter(city %in% c("Bengaluru", "Chennai", "Mumbai", "Hyderabad"))
+  
+  aqi_city
+
+  ggplot(aqi_city,aes(x=year,y=mean_value,color=city))+
+    geom_line(size=1)+
+    labs(title="Citywise pollutant average value",x="Year",y="Average values",subtitle ="2015-2020" )
+  
+  ggplot(aqi_city,aes(x=year,y=mean_value,color=pollutants))+
+    geom_line(size=1)+
+    labs(title="Citywise pollutant average value",x="Year",y="Average values",subtitle ="2015-2020" )+
+    facet_grid(pollutants~city,scale="free")+
+    theme_classic()-> aqi_city_plot
+  
+  ggplotly(aqi_city_plot)
+  
+  ggsave(" Citywise Pollutants Trends.pdf",
+         plot= aqi_city_plot,
+         units="in",
+         width=10,
+         height=6)
+
+  # Heat map
+  aqidf2 %>%
+    filter(pollutants == "co") %>%
+    group_by(week, weekday, month2) %>%
+    summarise(meanval = mean(values, na.rm = TRUE)) %>%
+    ggplot(aes(x = week,
+               y = weekday,
+               fill = meanval)) 
+    geom_tile() +
+    facet_wrap(~month2, scales = "free_x") +
+    # scale_fill_gradient(low = "yellow", high = "red") +
+    scale_fill_gradientn(colours = c("darkgreen", "yellow", "red")) +
+    theme_minimal() +
+    labs(title = "CO heat map",
+         subtitle = "For all cities",
+         x = NULL,
+         y=NULL)
+  
